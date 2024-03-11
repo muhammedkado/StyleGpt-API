@@ -67,13 +67,18 @@ class GenerateImageController extends Controller
                         'detail' => $responseData['detail'],
                         'error' => true
                     ],
-                    'image' => []
                 ]);
             }
 
         } catch (RequestException $e) {
             // Handle Guzzle HTTP exceptions
-            return $e->getMessage();
+            return response()->json([
+                'status'=>[
+                    'message' => 'Error',
+                    'detail' => $e->getMessage(),
+                    'error' => true
+                ],
+            ]);
         }
     }
 
@@ -112,12 +117,17 @@ class GenerateImageController extends Controller
                             'detail' => $response['detail'],
                             'error' => true
                         ],
-                        'image' => []
                     ]);
                 }
             }
         } else {
-            return 'Data is null or URLs.get is not set';
+            return response()->json([
+                'status'=>[
+                    'message' => $response['title'],
+                    'detail' => $response['detail'],
+                    'error' => true
+                ],
+            ]);'Data is null or URLs.get is not set';
         }
     }
 
