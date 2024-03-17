@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\GenerateImageController;
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,15 +16,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-/*Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::post('generateImage', [GenerateImageController::class, 'create']);
 
-Route::get('test', function (){
-    return 'hi';
-});*/
+Route::post('createUser', [UserController::class, 'create']);
 
-Route::get('index', [GenerateImageController::class, 'index']);
-Route::post('generateimage/create', [GenerateImageController::class, 'create']);
-Route::get('show', [GenerateImageController::class, 'show']);
-Route::get('delete', [GenerateImageController::class, 'destroy']);
+Route::get('/user/{uid}', [UserController::class, 'getUserByUid']);
+
+Route::get('/user/{uid}/images', [UserController::class, 'getImageByUid']);

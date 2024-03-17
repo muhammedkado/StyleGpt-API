@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Image;
+use App\Models\User;
 use GuzzleHttp\Client AS Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -28,14 +30,21 @@ class GenerateImageController extends Controller
     public function create(request $request)
     {
         try {
+            $uid = $request->request->get('uid');
             $image = $request->request->get('image');
             $prompt = $request->request->get('prompt');
-            $a_prompt = $request->request->get('a_prompt');
-            $n_prompt = $request->request->get('n_prompt');
-            $resolution = $request->request->get('resolution') ?? '256';
-            $detect_resolution = $request->request->get('detect_resolution') ?? 256;
+            $aPrompt = $request->request->get('a_prompt');
+            $nPrompt = $request->request->get('n_prompt');
+            $resolution = $request->request->get('resolution');
+            $detectResolution = $request->request->get('detect_resolution');
             $steps = $request->request->get('steps');
+            $roomType = $request->request->get('roomType');
+            $roomTheme = $request->request->get('roomTheme');
+            $user = User::where('uid', $uid)->first();
 
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
             $response = Http::withOptions(['verify' => false])
                 ->withHeaders([
                     'Authorization' => 'Token ' . env('REPLICATE_API_TOKEN'),
@@ -45,21 +54,22 @@ class GenerateImageController extends Controller
                     'input' => [
                         "eta" => 0,
                         "image" => $image ?? 'https://replicate.delivery/pbxt/IJZOELWrncBcjdE1s5Ko8ou35ZOxjNxDqMf0BhoRUAtv76u4/room.png',
-                        "scale" => 9,
-                        "prompt" => $prompt ?? "a room for gaming with gaming computers, gaming consoles, and gaming chairs",
-                        "a_prompt" => $a_prompt ?? "best quality, extremely detailed, photo from Pinterest, interior, cinematic photo, ultra-detailed, ultra-realistic, award-winning",
-                        "n_prompt" => $n_prompt ?? "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, walls changing, windows changing",
-                        "ddim_steps" => $steps ?? 20,
+                        "scale" => 11,
+                        "prompt" => $prompt ?? "a" . $roomTheme . $roomType,
+                        "a_prompt" => $aPrompt ?? "best quality, extremely detailed, photo from Pinterest, interior, cinematic photo, ultra-detailed, ultra-realistic, award-winning, high-resolution photography interior design, photorealistic, camera shots, dramatic, realistic",
+                        "n_prompt" => $nPrompt ?? "poorly drawn hands, missing limb, disfigured, cut off, ugly, grain, low res, deformed, blurry, bad anatomy, disfigured, poorly drawn face, mutation, mutated, floating limbs, disconnected limbs, disgusting, poorly drawn, mutilated, mangled, extra fingers, duplicate artifacts, missing arms, mutated hands, mutilated hands, cloned face, malformed, blurry top wall, blurry walls, extra limbs, weird colors, watermark, blur haze, bad art",
+                        "ddim_steps" => $steps ?? 60,
                         "num_samples" => "1",
-                        "value_threshold" => 0.1,
-                        "image_resolution" => $resolution ?? "256",
-                        "detect_resolution" => $detect_resolution ?? 256,
-                        "distance_threshold" => 0.1,
+                        "value_threshold" => 0.01,
+                        "image_resolution" => $resolution ?? "768",
+                        "detect_resolution" => $detectResolution ?? 512,
+                        "distance_threshold" => 0.01,
                     ],
                 ]);
             $responseData = $response->json();
+
             if ($response->successful()) {
-                return $this->getPhoto($responseData);
+                return $this->getPhoto($responseData, $uid, $image);
             } else {
                 return response()->json([
                     'status'=>[
@@ -82,7 +92,7 @@ class GenerateImageController extends Controller
         }
     }
 
-    private function getPhoto($data)
+    private function getPhoto($data, $uid)
     {
         if ($data !== null && isset($data['urls']['get'])) {
             $endpointUrl = $data['urls']['get'];
@@ -98,6 +108,11 @@ class GenerateImageController extends Controller
                     $responseData = $response->json();
                     if ($responseData['status'] === 'succeeded') {
                         $restoredImage = $responseData['output'][1];
+                        $image = new Image();
+                        $image->uid = $uid;
+                        $image->before = $responseData['input']['image']; // Set your 'before' value here
+                        $image->after = $restoredImage;
+                        $image->save();
                         return response()->json([
                             'status'=>[
                                 'message' => $responseData['status'],
@@ -106,28 +121,24 @@ class GenerateImageController extends Controller
                             'image' => $restoredImage
                         ]);
                     } elseif ($responseData['status'] === 'failed') {
-                        break;
-                    } else {
-                        usleep(1000000);
+                        return response()->json([
+                            'status'=>[
+                                'message' => 'status error is don\'t return succeeded',
+                                'error' => true
+                            ],
+                        ]);
                     }
                 } else {
-                    return response()->json([
-                        'status'=>[
-                            'message' => $response['title'],
-                            'detail' => $response['detail'],
-                            'error' => true
-                        ],
-                    ]);
+                    usleep(1000000);
                 }
             }
         } else {
             return response()->json([
                 'status'=>[
-                    'message' => $response['title'],
-                    'detail' => $response['detail'],
+                    'message' => 'Data is null or URLs.get is not set',
                     'error' => true
                 ],
-            ]);'Data is null or URLs.get is not set';
+            ]);
         }
     }
 
