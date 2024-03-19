@@ -69,7 +69,7 @@ class GenerateImageController extends Controller
             $responseData = $response->json();
 
             if ($response->successful()) {
-                return $this->getPhoto($responseData, $uid, $image);
+                return $responseData; //$this->getPhoto($responseData, $uid, $image);
             } else {
                 return response()->json([
                     'status'=>[
