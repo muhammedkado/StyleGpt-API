@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\exploreController;
+use App\Http\Controllers\exploresController;
 use App\Http\Controllers\GenerateImageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('generateImage', [GenerateImageController::class, 'create']);
 
-Route::get('index', [exploreController::class, 'index']);
+Route::get('index', [exploresController::class, 'index']);
 
-Route::post('publish', [exploreController::class, 'publish']);
+Route::post('publish', [exploresController::class, 'publish']);
 
 Route::post('createUser', [UserController::class, 'create']);
 

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Image; // Import the Image model
 
-class exploreController extends Controller
+class exploresController extends Controller
 {
     public function index()
     {
