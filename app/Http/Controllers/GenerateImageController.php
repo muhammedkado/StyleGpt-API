@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use BenBjurstrom\Replicate\Replicate;
 use GuzzleHttp\Exception\RequestException;
+use PhpParser\Node\Stmt\TryCatch;
 use Spatie\Async\Pool;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ClientException;
@@ -16,17 +17,6 @@ use Saloon\Laravel\Saloon;
 
 class GenerateImageController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        return 'the index is ok ';
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create(request $request)
     {
         try {
@@ -55,7 +45,7 @@ class GenerateImageController extends Controller
                         "eta" => 0,
                         "image" => $image ?? 'https://replicate.delivery/pbxt/IJZOELWrncBcjdE1s5Ko8ou35ZOxjNxDqMf0BhoRUAtv76u4/room.png',
                         "scale" => 11,
-                        "prompt" => $prompt ?? "a" . $roomTheme . $roomType,
+                        "prompt" => $prompt ?? "a " . $roomTheme .' '. $roomType,
                         "a_prompt" => $aPrompt ?? "best quality, extremely detailed, photo from Pinterest, interior, cinematic photo, ultra-detailed, ultra-realistic, award-winning, high-resolution photography interior design, photorealistic, camera shots, dramatic, realistic",
                         "n_prompt" => $nPrompt ?? "poorly drawn hands, missing limb, disfigured, cut off, ugly, grain, low res, deformed, blurry, bad anatomy, disfigured, poorly drawn face, mutation, mutated, floating limbs, disconnected limbs, disgusting, poorly drawn, mutilated, mangled, extra fingers, duplicate artifacts, missing arms, mutated hands, mutilated hands, cloned face, malformed, blurry top wall, blurry walls, extra limbs, weird colors, watermark, blur haze, bad art",
                         "ddim_steps" => $steps ?? 60,
@@ -66,10 +56,11 @@ class GenerateImageController extends Controller
                         "distance_threshold" => 0.01,
                     ],
                 ]);
+
             $responseData = $response->json();
 
             if ($response->successful()) {
-                return $this->getPhoto($responseData, $uid, $image);
+                return $this->getPhoto($responseData, $uid, $image, $roomTheme, $roomType);
             } else {
                 return response()->json([
                     'status'=>[
@@ -79,20 +70,18 @@ class GenerateImageController extends Controller
                     ],
                 ]);
             }
-
         } catch (RequestException $e) {
-            // Handle Guzzle HTTP exceptions
             return response()->json([
                 'status'=>[
                     'message' => 'Error',
                     'detail' => $e->getMessage(),
                     'error' => true
                 ],
-            ]);
+            ], 500);
         }
     }
 
-    private function getPhoto($data, $uid)
+    private function getPhoto($data, $uid, $originalImage, $theme, $type)
     {
         if ($data !== null && isset($data['urls']['get'])) {
             $endpointUrl = $data['urls']['get'];
@@ -108,28 +97,15 @@ class GenerateImageController extends Controller
                     $responseData = $response->json();
                     if ($responseData['status'] === 'succeeded') {
                         $restoredImage = $responseData['output'][1];
-                        $image = new Image();
-                        $image->uid = $uid;
-                        $image->before = $responseData['input']['image']; // Set your 'before' value here
-                        $image->after = $restoredImage;
-                        $image->save();
-                        return response()->json([
-                            'status'=>[
-                                'message' => $responseData['status'],
-                                'error' => false
-                            ],
-                            'image' => $restoredImage
-                        ]);
+                        return $this->updateImage($restoredImage, $uid, $originalImage, $theme, $type);
                     } elseif ($responseData['status'] === 'failed') {
                         return response()->json([
                             'status'=>[
                                 'message' => 'status error is don\'t return succeeded',
                                 'error' => true
                             ],
-                        ]);
+                        ],400);
                     }
-                } else {
-                    usleep(1000000);
                 }
             }
         } else {
@@ -138,47 +114,100 @@ class GenerateImageController extends Controller
                     'message' => 'Data is null or URLs.get is not set',
                     'error' => true
                 ],
-            ]);
+            ],400);
         }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function updateImage($image,$uid, $originalImage, $theme, $type)
     {
-        //
+        try {
+            $response = Http::withOptions(['verify' => false])
+                ->withHeaders([
+                    'Authorization' => 'Token ' . env('REPLICATE_API_TOKEN'),
+                ])
+                ->post('https://api.replicate.com/v1/predictions', [
+                    'version' => '4ed6fcc4373156ea6c57b19530b67046e8fdecb5254b55db487ce1718f95b3a4',
+                    'input' => [
+                        "seed" => 1337,
+                        "image" => $image ?? "https://replicate.delivery/pbxt/KaWIzouebpWmVyaUKjHTDUkq5g6lO6tQdd0439zzWu27ArHo/Room%20(4).png",
+                        "prompt" => "masterpiece, best quality, highres, <lora:more_details:0.5> <lora:SDXLrender_v2.0:1>",
+                        "dynamic" => 6,
+                        "scheduler" => "DPM++ 3M SDE Karras",
+                        "creativity" => 0.35,
+                        "resemblance" => 0.6,
+                        "scale_factor" => 2,
+                        "negative_prompt" => "(worst quality, low quality, normal quality:2) JuggernautNegative-neg",
+                        "num_inference_steps" => 18,
+                    ],
+                ]);
+            $responseData = $response->json();
+            return $this->secondRequest($responseData, $uid, $originalImage, $theme, $type);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'=>[
+                    'message' => $e->getMessage(),
+                    'error' => true
+                ],
+            ], 500);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    private function secondRequest($data, $uid, $images, $theme, $type)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        try {
+            if ($data !== null && isset($data['urls']['get'])) {
+                $endpointUrl = $data['urls']['get'];
+                $restoredImage = null;
+                while ($restoredImage === null) {
+                    $response = Http::withOptions(['verify' => false])
+                        ->withHeaders([
+                            'Authorization' => 'Token ' . env('REPLICATE_API_TOKEN'),
+                            'Content-Type' => 'application/json',
+                        ])
+                        ->get($endpointUrl);
+                    if ($response->successful()) {
+                        $responseData = $response->json();
+                        if ($responseData['status'] === 'succeeded') {
+                            $restoredImage = json_encode($responseData['output']);
+                            $image = new Image();
+                            $image->uid = $uid;
+                            $image->before = $images;
+                            $image->after = $restoredImage;
+                            $image->theme = $theme;
+                            $image->type = $type;
+                            $image->save();
+                            return response()->json([
+                                'status'=>[
+                                    'message' => $responseData['status'],
+                                    'error' => false
+                                ],
+                                'image' => $responseData['output']
+                            ]);
+                        } elseif ($responseData['status'] === 'failed') {
+                            return response()->json([
+                                'status'=>[
+                                    'message' => 'second model failed to process, status: failed',
+                                    'error' => true
+                                ],
+                            ], 400);
+                        }
+                    }
+                }
+            } else {
+                return response()->json([
+                    'status'=>[
+                        'message' => 'Data is null or URLs.get is not set',
+                        'error' => true
+                    ],
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'=>[
+                    'message' => $e->getMessage(),
+                    'error' => true
+                ],
+            ], 500);
+        }
     }
 }
