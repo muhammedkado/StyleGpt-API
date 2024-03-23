@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 use App\Models\Image;
 use App\Models\User;
 use GuzzleHttp\Client AS Client;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use BenBjurstrom\Replicate\Replicate;
+use Google\Cloud\Storage\StorageClient;
 use GuzzleHttp\Exception\RequestException;
 use PhpParser\Node\Stmt\TryCatch;
 use Spatie\Async\Pool;
@@ -14,6 +16,8 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ClientException;
 use Saloon\Http\Faking\MockResponse;
 use Saloon\Laravel\Saloon;
+use Illuminate\Support\Str;
+
 
 class GenerateImageController extends Controller
 {
@@ -63,16 +67,16 @@ class GenerateImageController extends Controller
                 return $this->getPhoto($responseData, $uid, $image, $roomTheme, $roomType);
             } else {
                 return response()->json([
-                    'status'=>[
+                    'status' => [
                         'message' => $responseData['title'],
                         'detail' => $responseData['detail'],
                         'error' => true
                     ],
-                ]);
+                ], 400);
             }
         } catch (RequestException $e) {
             return response()->json([
-                'status'=>[
+                'status' => [
                     'message' => 'Error',
                     'detail' => $e->getMessage(),
                     'error' => true
@@ -118,7 +122,7 @@ class GenerateImageController extends Controller
         }
     }
 
-    public function updateImage($image,$uid, $originalImage, $theme, $type)
+    public function updateImage($image, $uid, $originalImage, $theme, $type)
     {
         try {
             $response = Http::withOptions(['verify' => false])
@@ -168,25 +172,12 @@ class GenerateImageController extends Controller
                     if ($response->successful()) {
                         $responseData = $response->json();
                         if ($responseData['status'] === 'succeeded') {
-                            $restoredImage = json_encode($responseData['output']);
-                            $image = new Image();
-                            $image->uid = $uid;
-                            $image->before = $images;
-                            $image->after = $restoredImage;
-                            $image->theme = $theme;
-                            $image->type = $type;
-                            $image->save();
-                            return response()->json([
-                                'status'=>[
-                                    'message' => $responseData['status'],
-                                    'error' => false
-                                ],
-                                'image' => $responseData['output']
-                            ]);
+                            $restoredImage = $responseData['output'];
+                            return $this->storeImageFromURL($restoredImage, $uid, $images, $theme, $type);
                         } elseif ($responseData['status'] === 'failed') {
                             return response()->json([
                                 'status'=>[
-                                    'message' => 'second model failed to process, status: failed',
+                                    'message' => 'philz1337x model failed to process, status: failed',
                                     'error' => true
                                 ],
                             ], 400);
@@ -208,6 +199,51 @@ class GenerateImageController extends Controller
                     'error' => true
                 ],
             ], 500);
+        }
+    }
+
+    public function storeImageFromURL($imageUrl, $uid, $images, $theme, $type)
+    {
+        try {
+            // Initialize Google Cloud Storage client
+            $storage = new StorageClient([
+                'keyFile' => json_decode(file_get_contents(storage_path('roomai-af76d-firebase-adminsdk-b4un1-19d796851a.json')), true)
+            ]);
+
+            // Get the default bucket
+            $bucket = $storage->bucket('roomai-af76d.appspot.com');
+            // Download image from the provided URL
+            $imageData = file_get_contents($imageUrl[0]);
+            if ($imageData === false) {
+                throw new Exception('Failed to download image data from URL: ' . $imageUrl);
+            }
+            // Generate a uuid
+            $uuid = Str::uuid();
+            $url = $uid . '_' . $uuid;
+
+            // Upload the image data to Firebase Storage
+            $object = $bucket->upload($imageData, [
+                'name' => 'rooms/' . $url,
+                'metadata' => [
+                    'contentType' => 'image/jpeg'
+                ]
+            ]);
+            $ImageUrll = "https://firebasestorage.googleapis.com/v0/b/roomai-af76d.appspot.com/o/rooms%2F" . $url . "?alt=media";
+            $image = new Image();
+            $image->uid = $uid;
+            $image->before = $images;
+            $image->after = $ImageUrll;
+            $image->theme = $theme;
+            $image->type = $type;
+            $image->save();
+            return response()->json([
+                'success' => true,
+                'image' => $ImageUrll,
+                'id' => $image->id
+            ]);
+        } catch (\Exception $e) {
+            // Handle the error gracefully
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }
