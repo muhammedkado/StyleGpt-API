@@ -80,6 +80,7 @@ class UserController extends Controller
                     'after' => $image->after,
                     'theme' => $image->theme,
                     'type' => $image->type,
+                    'published' => $image->published,
                     'createdAt' => $image->created_at->format('Y-m-d H:i'),
                 ];
             });

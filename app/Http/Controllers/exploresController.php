@@ -43,7 +43,7 @@ class exploresController extends Controller
             }
             $image->published = $publish;
             $image->save();
-            return response()->json(['success' => true, 'message' => 'Image has been published successfully'], 200);
+            return response()->json(['success' => true, 'message' => 'publish status has been changing successfully'], 200);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => 'Internal server error'], 500);
         }
