@@ -39,6 +39,10 @@ class GenerateImageController extends Controller
             if (!$user) {
                 return response()->json(['error' => 'User not found'], 404);
             }
+
+            if ($user->credit <= 0) {
+                return response()->json(['error' => 'You do not have any credits.', 'credit' => $user->credit], 404);
+            }
             $response = Http::withOptions(['verify' => false])
                 ->withHeaders([
                     'Authorization' => 'Token ' . env('REPLICATE_API_TOKEN'),
@@ -55,7 +59,7 @@ class GenerateImageController extends Controller
                         "ddim_steps" => $steps ?? 60,
                         "num_samples" => "1",
                         "value_threshold" => 0.01,
-                        "image_resolution" => $resolution ?? "768",
+                        "image_resolution" => $resolution ?? "512",
                         "detect_resolution" => $detectResolution ?? 512,
                         "distance_threshold" => 0.01,
                     ],
@@ -230,16 +234,20 @@ class GenerateImageController extends Controller
             ]);
             $ImageUrll = "https://firebasestorage.googleapis.com/v0/b/roomai-af76d.appspot.com/o/rooms%2F" . $url . "?alt=media";
             $image = new Image();
+            $user = new User();
+            $user->credit -= 1;
             $image->uid = $uid;
             $image->before = $images;
             $image->after = $ImageUrll;
             $image->theme = $theme;
             $image->type = $type;
             $image->save();
+            $user->save();
             return response()->json([
                 'success' => true,
                 'image' => $ImageUrll,
-                'id' => $image->id
+                'id' => $image->id,
+                'credit' => $user->credit
             ]);
         } catch (\Exception $e) {
             // Handle the error gracefully
