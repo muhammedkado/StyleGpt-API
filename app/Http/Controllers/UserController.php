@@ -69,7 +69,7 @@ class UserController extends Controller
 
             if (!$user) {
                 // If user not found, return an error response
-                return response()->json(['error' => 'User not found'], 404);
+                return response()->json(['error' => true, 'message' => 'User not found'], 404);
             }
             $images = $user->images()->orderBy('created_at', 'desc')->get();
             // Format the response data

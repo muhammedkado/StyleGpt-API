@@ -131,7 +131,7 @@ class GenerateImageController extends Controller
     {
         try {
             if ($test) {
-                return $this->storeImageFromURL($image, $uid, $originalImage, $theme, $type);
+                return $this->storeImageFromURL($image, $uid, $originalImage, $theme, $type, $test);
             }
             $response = Http::withOptions(['verify' => false])
                 ->withHeaders([
@@ -153,7 +153,7 @@ class GenerateImageController extends Controller
                     ],
                 ]);
             $responseData = $response->json();
-            return $this->secondRequest($responseData, $uid, $originalImage, $theme, $type);
+            return $this->secondRequest($responseData, $uid, $originalImage, $theme, $type, $test);
         } catch (\Exception $e) {
             return response()->json([
                 'status'=>[
@@ -164,7 +164,7 @@ class GenerateImageController extends Controller
         }
     }
 
-    private function secondRequest($data, $uid, $images, $theme, $type)
+    private function secondRequest($data, $uid, $images, $theme, $type, $test)
     {
         try {
             if ($data !== null && isset($data['urls']['get'])) {
@@ -181,12 +181,17 @@ class GenerateImageController extends Controller
                         $responseData = $response->json();
                         if ($responseData['status'] === 'succeeded') {
                             $restoredImage = $responseData['output'];
-                            return $this->storeImageFromURL($restoredImage, $uid, $images, $theme, $type);
+                            return $this->storeImageFromURL($restoredImage, $uid, $images, $theme, $type, $test);
                         } elseif ($responseData['status'] === 'failed') {
                             return response()->json([
                                 'status'=>[
-                                    'message' => 'philz1337x model failed to process, status: failed',
-                                    'error' => true
+                                    'error' => true,
+                                    'message' => 'Failed to process the request.',
+                                    'details' => [
+                                        'model' => 'philz1337x',
+                                        'status' => 'failed',
+                                        'reason' => 'The model encountered an error while processing the request.'
+                                    ]
                                 ],
                             ], 400);
                         }
@@ -210,7 +215,7 @@ class GenerateImageController extends Controller
         }
     }
 
-    public function storeImageFromURL($imageUrl, $uid, $images, $theme, $type)
+    public function storeImageFromURL($imageUrl, $uid, $images, $theme, $type, $test)
     {
         try {
             // Initialize Google Cloud Storage client
@@ -221,7 +226,13 @@ class GenerateImageController extends Controller
             // Get the default bucket
             $bucket = $storage->bucket('roomai-af76d.appspot.com');
             // Download image from the provided URL
-            $imageData = file_get_contents($imageUrl);
+            if ($test) {
+
+                $imageData = file_get_contents($imageUrl);
+            } else {
+                $imageData = file_get_contents($imageUrl[0]);
+            }
+
             if ($imageData === false) {
                 throw new Exception('Failed to download image data from URL: ' . $imageUrl);
             }
