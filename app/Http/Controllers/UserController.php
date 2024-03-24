@@ -30,7 +30,7 @@ class UserController extends Controller
                 'uid.unique' => 'The UID is already in use.',
             ]);
 
-            $user = new User();
+             $user = new User();
              $user->name = $request->input('name');
              $user->email = $request->input('email');
              $user->uid = $request->input('uid');

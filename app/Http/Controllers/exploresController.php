@@ -39,13 +39,16 @@ class exploresController extends Controller
 
             $image = Image::find($id);
             if (!$image) {
-                return response()->json(['error' => 'Image not found'], 404);
+                return response()->json(['error' => true, 'message' => 'Image not found'], 404);
             }
             $image->published = $publish;
+            if ($publish) {
+                $image->publish_at = now();
+            }
             $image->save();
             return response()->json(['success' => true, 'message' => 'publish status has been changing successfully'], 200);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => 'Internal server error'], 500);
+            return response()->json(['error' => true, 'message'  => 'Internal server error'], 500);
         }
     }
 
@@ -53,8 +56,9 @@ class exploresController extends Controller
     {
         // Select 20 random images
         $randomImages = Image::where('published', true)
-            ->orderBy('created_at')
+            ->orderByDesc('publish_at')
             ->get();
+
         // Prepare the response data array
         $responseData = [];
 
@@ -62,13 +66,14 @@ class exploresController extends Controller
         foreach ($randomImages as $image) {
             // Add image data to the response data array
             $responseData[] = [
-                'imageId' => $image->id,
+                'id' => $image->id,
                 'before' => $image->before,
                 'after' => $image->after,
                 'theme' => $image->theme,
                 'type' => $image->type,
                 'explore' => $image->explore,
                 'createdAt' => $image->created_at->format('Y-m-d H:i:s'),
+                'publishAt' => $image->publish_at,
             ];
         }
 
@@ -85,7 +90,7 @@ class exploresController extends Controller
             }
 
             if (empty($explore)) {
-                return response()->json(['error' => true, 'message' => 'explore can\'t be empty'], 404);
+                return response()->json(['error' => true, 'message' => 'explore parameter can\'t be empty'], 404);
             }
 
             $image = Image::find($id);
