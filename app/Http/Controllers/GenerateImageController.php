@@ -34,6 +34,7 @@ class GenerateImageController extends Controller
             $steps = $request->request->get('steps');
             $roomType = $request->request->get('roomType');
             $roomTheme = $request->request->get('roomTheme');
+            $test = $request->request->get('test');
             $user = User::where('uid', $uid)->first();
 
             if (!$user) {
@@ -68,7 +69,7 @@ class GenerateImageController extends Controller
             $responseData = $response->json();
 
             if ($response->successful()) {
-                return $this->getPhoto($responseData, $uid, $image, $roomTheme, $roomType);
+                return $this->getPhoto($responseData, $uid, $image, $roomTheme, $roomType, $test);
             } else {
                 return response()->json([
                     'status' => [
@@ -89,7 +90,7 @@ class GenerateImageController extends Controller
         }
     }
 
-    private function getPhoto($data, $uid, $originalImage, $theme, $type)
+    private function getPhoto($data, $uid, $originalImage, $theme, $type, $test)
     {
         if ($data !== null && isset($data['urls']['get'])) {
             $endpointUrl = $data['urls']['get'];
@@ -105,7 +106,7 @@ class GenerateImageController extends Controller
                     $responseData = $response->json();
                     if ($responseData['status'] === 'succeeded') {
                         $restoredImage = $responseData['output'][1];
-                        return $this->updateImage($restoredImage, $uid, $originalImage, $theme, $type);
+                        return $this->updateImage($restoredImage, $uid, $originalImage, $theme, $type, $test);
                     } elseif ($responseData['status'] === 'failed') {
                         return response()->json([
                             'status'=>[
@@ -126,9 +127,12 @@ class GenerateImageController extends Controller
         }
     }
 
-    public function updateImage($image, $uid, $originalImage, $theme, $type)
+    public function updateImage($image, $uid, $originalImage, $theme, $type, $test = false)
     {
         try {
+            if ($test) {
+                return $this->storeImageFromURL($image, $uid, $originalImage, $theme, $type);
+            }
             $response = Http::withOptions(['verify' => false])
                 ->withHeaders([
                     'Authorization' => 'Token ' . env('REPLICATE_API_TOKEN'),
@@ -217,7 +221,7 @@ class GenerateImageController extends Controller
             // Get the default bucket
             $bucket = $storage->bucket('roomai-af76d.appspot.com');
             // Download image from the provided URL
-            $imageData = file_get_contents($imageUrl[0]);
+            $imageData = file_get_contents($imageUrl);
             if ($imageData === false) {
                 throw new Exception('Failed to download image data from URL: ' . $imageUrl);
             }
@@ -234,7 +238,7 @@ class GenerateImageController extends Controller
             ]);
             $ImageUrll = "https://firebasestorage.googleapis.com/v0/b/roomai-af76d.appspot.com/o/rooms%2F" . $url . "?alt=media";
             $image = new Image();
-            $user = new User();
+            $user = User::where('uid', $uid)->first();
             $user->credit -= 1;
             $image->uid = $uid;
             $image->before = $images;
