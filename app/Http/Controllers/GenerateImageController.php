@@ -234,7 +234,12 @@ class GenerateImageController extends Controller
             }
 
             if ($imageData === false) {
-                throw new Exception('Failed to download image data from URL: ' . $imageUrl);
+                return response()->json([
+                    'status'=>[
+                        'message' => 'Failed to download image data from URL: ' . $imageUrl,
+                        'error' => true
+                    ],
+                ], 500);
             }
             // Generate a uuid
             $uuid = Str::uuid();

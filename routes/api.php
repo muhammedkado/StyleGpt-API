@@ -19,7 +19,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('generateImage', [GenerateImageController::class, 'create']);
 
-Route::get('index', [exploresController::class, 'index']);
+Route::get('explore', [exploresController::class, 'explore']);
+
+Route::get('admin/publish', [exploresController::class, 'adminPublish']);
+
+Route::get('admin/explore', [exploresController::class, 'adminExplore']);
 
 Route::post('publish', [exploresController::class, 'publish']);
 
