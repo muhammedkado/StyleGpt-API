@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\exploresController;
 use App\Http\Controllers\GenerateImageController;
+use App\Http\Controllers\paymentController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -30,5 +31,10 @@ Route::post('publish', [exploresController::class, 'publish']);
 Route::post('createUser', [UserController::class, 'create']);
 
 Route::get('/user/{uid}', [UserController::class, 'getUserByUid']);
+
+Route::post('/transactions', [paymentController::class, 'createTransaction']);
+
+Route::get('/checkTransactions', [paymentController::class, 'checkTransaction']);
+
 
 Route::get('/user/{uid}/images', [UserController::class, 'getImageByUid']);

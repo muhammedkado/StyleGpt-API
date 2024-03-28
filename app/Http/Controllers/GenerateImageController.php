@@ -110,10 +110,10 @@ class GenerateImageController extends Controller
                     } elseif ($responseData['status'] === 'failed') {
                         return response()->json([
                             'status'=>[
-                                'message' => 'status error is don\'t return succeeded',
+                                'message' => 'Status error: status did not return succeeded',
                                 'error' => true
                             ],
-                        ],400);
+                        ], 400);
                     }
                 }
             }
@@ -123,7 +123,7 @@ class GenerateImageController extends Controller
                     'message' => 'Data is null or URLs.get is not set',
                     'error' => true
                 ],
-            ],400);
+            ], 400);
         }
     }
 

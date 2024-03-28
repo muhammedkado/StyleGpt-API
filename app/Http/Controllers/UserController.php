@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
@@ -21,6 +22,10 @@ class UserController extends Controller
                     'string',
                     Rule::unique('users', 'uid'),
                 ],
+                'name' => [
+                    'required',
+                    'string',
+                ],
             ], [
                 'email.required' => 'The email address is required.',
                 'email.email' => 'The email address must be a valid email format.',
@@ -29,14 +34,38 @@ class UserController extends Controller
                 'uid.string' => 'The UID must be a string.',
                 'uid.unique' => 'The UID is already in use.',
             ]);
+            $name = $request->input('name');
+            $email = $request->input('email');
+            $uid = $request->input('uid');
+            $image = $request->input('image');
+            $response = Http::withOptions(['verify' => false])
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
+                    "Content-Type" => "application/json",
+                ])
+                ->post('https://sandbox-api.paddle.com/customers', [
+                    "name" => $name,
+                    "email" => $email
+                ]);
 
-             $user = new User();
-             $user->name = $request->input('name');
-             $user->email = $request->input('email');
-             $user->uid = $request->input('uid');
-             $user->image = $request->input('image');
-             $user->save();
-            return response()->json(['success' => true, 'message' => 'User created successfully']);
+            $responseData = $response->json();
+            if (empty($responseData['error'])) {
+                $user = new User();
+                $user->name = $name;
+                $user->email = $email;
+                $user->uid = $uid;
+                $user->image = $image;
+                $user->save();
+                return response()->json(['success' => true, 'message' => 'User created successfully']);
+            } else {
+                return response()->json([
+                    'status' => [
+                        'message' =>$responseData['error']['code'],
+                        'detail' => $responseData['error']['detail'],
+                        'error' => true
+                    ],
+                ], 400);
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['error' => true, 'message' => $e->getMessage()], 422);
         }
