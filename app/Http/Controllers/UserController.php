@@ -55,6 +55,7 @@ class UserController extends Controller
                 $user->email = $email;
                 $user->uid = $uid;
                 $user->image = $image;
+                $user->customerid = $responseData['data']['id'];
                 $user->save();
                 return response()->json(['success' => true, 'message' => 'User created successfully']);
             } else {

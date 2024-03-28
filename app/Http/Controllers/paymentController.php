@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Laravel\Paddle\Cashier\WebhookController as PaddleWebhookController;
 
 class paymentController extends Controller
 {
@@ -53,52 +54,28 @@ class paymentController extends Controller
 
    }
 
-   public function checkTransaction(request $request)
-   {
-       $transactionId = $request->query('transaction_id');
-       $uid = $request->query('uid');
-       $response = Http::withOptions(['verify' => false])
-           ->withHeaders([
-               'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
-               'Content-Type' => 'application/json',
-           ])
-           ->get('https://sandbox-api.paddle.com/transactions/' . $transactionId);
-
-        $user = User::where('uid', $uid)->first();
-       // return $user;
-        if (!$user) {
-            return response()->json(['error' => true, 'message' => 'User not found'], 404);
+    public function checkTransaction(request $request)
+    {
+        // Verify webhook signature
+        $signatureValid = $request->hasValidSignature();
+        if (!$signatureValid) {
+            return response()->json(['error' => true, 'message' => 'Invalid webhook signature'], 403);
         }
+        $payload = $request->all();
+        $customerId = $payload['data']['customer_id'];
+        $user = User::where('customerid', $customerId)->first();
 
-        $subscriptionsCheck = $user->issubscriptions;
-        $responseData = json_decode($response, true);
-        if ($response['data']['status'] === 'completed' && $subscriptionsCheck === false) {
-            $user->issubscriptions = true;
-            $basicValue = $responseData['data']['items'][0]['price']['custom_data'];
-           foreach ($basicValue as $key => $value) {
-               $key = str_replace(' ', '', $key);
-               if ($key === 'Basic') {
-                   $user->credit = intval($value);
-                   //return $user->credit;
-               } elseif ($key === 'pro') {
-                   $user->credit = intval($value);
-               } elseif ($key === 'pro_blus') {
-                   $user->credit = $value;
-               } elseif ($key === 'yearBasic') {
-                   $user->credit = $value;
-               } elseif ($key === 'yearPro') {
-                   $user->credit = $value;
-               } elseif ($key === 'yearProBluse') {
-                   $user->credit = $value;
-               }
+        $user->issubscriptions = true;
+        $basicValue = $payload['data']['items'][0]['price']['custom_data'];
+        foreach ($basicValue as $key => $value) {
+            $key = str_replace(' ', '', $key);
+            if (in_array($key, ['Basic', 'pro', 'pro_blus', 'yearBasic', 'yearPro', 'yearProBluse'])) {
+                $user->credit = intval($value);
+                break; // Assuming only one credit value should be applied
             }
-            $user->save();
-        } else {
-            return response()->json([
-                'error' => true,
-                'subscriptionsCheck' => $subscriptionsCheck,
-                'status' => $response['data']['status']
-            ], 404);
         }
+        $user->save();
+
+        return response()->json(['success' => true, 'message' => 'Transaction processed successfully']);
     }
 }
