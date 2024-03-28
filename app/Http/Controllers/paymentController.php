@@ -35,7 +35,7 @@ class paymentController extends Controller
                'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
                'Content-Type' => 'application/json',
            ])
-           ->get('https://sandbox-api.paddle.com/transactions', [
+           ->post('https://sandbox-api.paddle.com/transactions', [
                'items' => [
                    [
                        'quantity' => 1,
