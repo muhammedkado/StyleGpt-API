@@ -35,7 +35,7 @@ class paymentController extends Controller
                'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
                'Content-Type' => 'application/json',
            ])
-           ->post('https://sandbox-api.paddle.com/transactions', [
+           ->get('https://sandbox-api.paddle.com/transactions', [
                'items' => [
                    [
                        'quantity' => 1,
@@ -65,6 +65,7 @@ class paymentController extends Controller
            ->get('https://sandbox-api.paddle.com/transactions/' . $transactionId);
 
         $user = User::where('uid', $uid)->first();
+       // return $user;
         if (!$user) {
             return response()->json(['error' => true, 'message' => 'User not found'], 404);
         }
@@ -73,8 +74,25 @@ class paymentController extends Controller
         $responseData = json_decode($response, true);
         if ($response['data']['status'] === 'completed' && $subscriptionsCheck === false) {
             $user->issubscriptions = true;
-            $basicValue = $responseData['data']['items'][0]['price']['custom_data']['Basic '];
-            $user->credit = $basicValue;
+            $basicValue = $responseData['data']['items'][0]['price']['custom_data'];
+           foreach ($basicValue as $key => $value) {
+               $key = str_replace(' ', '', $key);
+               if ($key === 'Basic') {
+                   $user->credit = intval($value);
+                   //return $user->credit;
+               } elseif ($key === 'pro') {
+                   $user->credit = intval($value);
+               } elseif ($key === 'pro_blus') {
+                   $user->credit = $value;
+               } elseif ($key === 'yearBasic') {
+                   $user->credit = $value;
+               } elseif ($key === 'yearPro') {
+                   $user->credit = $value;
+               } elseif ($key === 'yearProBluse') {
+                   $user->credit = $value;
+               }
+            }
+            $user->save();
         } else {
             return response()->json([
                 'error' => true,
