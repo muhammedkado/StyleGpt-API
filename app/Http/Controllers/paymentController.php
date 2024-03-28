@@ -64,17 +64,41 @@ class paymentController extends Controller
             return response()->json(['error' => true, 'message' => 'Missing Paddle-Signature header'], 403);
         }
 
-        // Extract timestamp and signature
-        [$timestamp, $signature] = explode('.', $paddleSignature, 2);
+        // Split signature into parts
+        $signatureParts = explode(';', $paddleSignature);
+
+        // Check if the array contains at least two elements
+        if (count($signatureParts) < 2) {
+            Log::warning('Invalid Paddle-Signature format');
+            return response()->json(['error' => true, 'message' => 'Invalid Paddle-Signature format'], 403);
+        }
+
+        // Extract timestamp and signature from header
+        $signatureValues = [];
+        foreach ($signatureParts as $part) {
+            $pair = explode('=', $part);
+            if (count($pair) == 2) {
+                $signatureValues[$pair[0]] = $pair[1];
+            } else {
+                Log::warning('Invalid Paddle-Signature format');
+                return response()->json(['error' => true, 'message' => 'Invalid Paddle-Signature format'], 403);
+            }
+        }
+
+        // Ensure that both 'ts' and 'h1' keys exist
+        if (!isset($signatureValues['ts']) || !isset($signatureValues['h1'])) {
+            Log::warning('Invalid Paddle-Signature format');
+            return response()->json(['error' => true, 'message' => 'Invalid Paddle-Signature format'], 403);
+        }
 
         // Build the signed payload
-        $signedPayload = $timestamp . '.' . $request->getContent();
+        $signedPayload = $signatureValues['ts'] . ':' . $request->getContent();
 
         // Hash the signed payload
-        $computedSignature = hash_hmac('sha1', $signedPayload, env('PADDLE_WEBHOOK_SECRET'));
+        $computedSignature = hash_hmac('sha256', $signedPayload, env('PADDLE_WEBHOOK_SECRET'));
 
         // Compare signatures
-        if ($signature !== $computedSignature) {
+        if ($signatureValues['h1'] !== $computedSignature) {
             // Invalid signature
             Log::warning('Invalid Paddle webhook signature');
             return response()->json(['error' => true, 'message' => 'Invalid signature'], 403);
@@ -98,13 +122,13 @@ class paymentController extends Controller
         }
 
         // Process user subscription and credit based on webhook data
-        $user->issubscriptions = true;
         $basicValue = data_get($payload, 'data.items.0.price.custom_data');
         if ($basicValue) {
+            $user->issubscriptions = true;
             foreach ($basicValue as $key => $value) {
                 $key = str_replace(' ', '', $key);
                 if (in_array($key, ['Basic', 'pro', 'pro_blus', 'yearBasic', 'yearPro', 'yearProBluse'])) {
-                    $user->credit = intval($value);
+                    $user->credit += intval($value);
                     break; // Assuming only one credit value should be applied
                 }
             }
@@ -113,5 +137,6 @@ class paymentController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Transaction processed successfully']);
     }
+
 
 }

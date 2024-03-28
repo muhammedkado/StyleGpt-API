@@ -34,7 +34,7 @@ Route::get('/user/{uid}', [UserController::class, 'getUserByUid']);
 
 Route::post('/transactions', [paymentController::class, 'createTransaction']);
 
-Route::post('/checkTransactions', [paymentController::class, 'checkTransaction'])->middleware('paddle.signature');
+Route::post('/checkTransactions', [paymentController::class, 'checkTransaction']);
 
 
 Route::get('/user/{uid}/images', [UserController::class, 'getImageByUid']);
