@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Image;
 use App\Models\User;
 use GuzzleHttp\Client AS Client;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -35,15 +36,22 @@ class GenerateImageController extends Controller
             $roomType = $request->request->get('roomType');
             $roomTheme = $request->request->get('roomTheme');
             $test = $request->request->get('test');
-            $user = User::where('uid', $uid)->first();
+            DB::beginTransaction(); // Start a transaction
+
+            $user = User::where('uid', $uid)->lockForUpdate()->first();
 
             if (!$user) {
-                return response()->json(['error' => 'User not found'], 404);
+                return response()->json(['error' => true, 'message' => 'User not found'], 404);
             }
 
-            if ($user->credit <= 0) {
-                return response()->json(['error' => 'You do not have any credits.', 'credit' => $user->credit], 404);
+            if ($user->credit < 1) {
+                return response()->json(['error' => true, 'message' => 'Credit is not enough'], 400);
             }
+            $user->credit -= 1;
+            $user->save();
+
+            DB::commit(); // Commit the transaction
+
             $response = Http::withOptions(['verify' => false])
                 ->withHeaders([
                     'Authorization' => 'Token ' . env('REPLICATE_API_TOKEN'),
@@ -71,6 +79,7 @@ class GenerateImageController extends Controller
             if ($response->successful()) {
                 return $this->getPhoto($responseData, $uid, $image, $roomTheme, $roomType, $test);
             } else {
+                DB::rollBack();
                 return response()->json([
                     'status' => [
                         'message' => $responseData['title'],
@@ -80,6 +89,7 @@ class GenerateImageController extends Controller
                 ], 400);
             }
         } catch (RequestException $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => [
                     'message' => 'Error',
@@ -108,6 +118,7 @@ class GenerateImageController extends Controller
                         $restoredImage = $responseData['output'][1];
                         return $this->updateImage($restoredImage, $uid, $originalImage, $theme, $type, $test);
                     } elseif ($responseData['status'] === 'failed') {
+                        DB::rollBack();
                         return response()->json([
                             'status'=>[
                                 'message' => 'Status error: status did not return succeeded',
@@ -118,6 +129,7 @@ class GenerateImageController extends Controller
                 }
             }
         } else {
+            DB::rollBack();
             return response()->json([
                 'status'=>[
                     'message' => 'Data is null or URLs.get is not set',
@@ -155,6 +167,7 @@ class GenerateImageController extends Controller
             $responseData = $response->json();
             return $this->secondRequest($responseData, $uid, $originalImage, $theme, $type, $test);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status'=>[
                     'message' => $e->getMessage(),
@@ -198,6 +211,7 @@ class GenerateImageController extends Controller
                     }
                 }
             } else {
+                DB::rollBack();
                 return response()->json([
                     'status'=>[
                         'message' => 'Data is null or URLs.get is not set',
@@ -206,6 +220,7 @@ class GenerateImageController extends Controller
                 ], 400);
             }
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status'=>[
                     'message' => $e->getMessage(),
@@ -255,14 +270,12 @@ class GenerateImageController extends Controller
             $ImageUrll = "https://firebasestorage.googleapis.com/v0/b/roomai-af76d.appspot.com/o/rooms%2F" . $url . "?alt=media";
             $image = new Image();
             $user = User::where('uid', $uid)->first();
-            $user->credit -= 1;
             $image->uid = $uid;
             $image->before = $images;
             $image->after = $ImageUrll;
             $image->theme = $theme;
             $image->type = $type;
             $image->save();
-            $user->save();
             return response()->json([
                 'success' => true,
                 'image' => $ImageUrll,
@@ -270,6 +283,7 @@ class GenerateImageController extends Controller
                 'credit' => $user->credit
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             // Handle the error gracefully
             return response()->json(['error' => $e->getMessage()], 500);
         }
