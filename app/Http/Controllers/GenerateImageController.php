@@ -278,8 +278,10 @@ class GenerateImageController extends Controller
             $image->save();
             return response()->json([
                 'success' => true,
-                'image' => $ImageUrll,
                 'id' => $image->id,
+                'image' => $ImageUrll,
+                'theme' => $theme,
+                'type' => $type,
                 'credit' => $user->credit
             ]);
         } catch (\Exception $e) {

@@ -19,6 +19,7 @@ class exploresController extends Controller
         foreach ($randomImages as $image) {
             // Add image data to the response data array
             $responseData[] = [
+                'success' => true,
                 'before' => $image->before,
                 'after' => $image->after,
                 'theme' => $image->theme,
@@ -90,18 +91,18 @@ class exploresController extends Controller
             }
 
             if (empty($explore)) {
-                return response()->json(['error' => true, 'message' => 'explore parameter can\'t be empty'], 404);
+                return response()->json(['error' => true, 'message' => 'published parameter can\'t be empty'], 404);
             }
 
             $image = Image::find($id);
             if (!$image) {
-                return response()->json(['error' => 'Image not found'], 404);
+                return response()->json(['error' => true, 'message' => 'Image not found'], 404);
             }
             $image->explore = $explore;
             $image->save();
             return response()->json(['success' => true, 'message' => 'explore status has been changing successfully'], 200);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => true, 'message' => 'Internal server error'], 500);
+            return response()->json(['error' => true, 'message' => 'Internal server error', 'detail' => $e->getMessage()], 500);
         }
     }
 }

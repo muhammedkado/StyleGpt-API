@@ -24,8 +24,7 @@ class paymentController extends Controller
         return $responseData['data'][0]['id'];
     }
 
-
-   public function createTransaction(request $request)
+    public function createTransaction(request $request)
    {
        $email = $request->request->get('email');
        $priceId = $request->request->get('priceId');
@@ -137,6 +136,4 @@ class paymentController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Transaction processed successfully']);
     }
-
-
 }
