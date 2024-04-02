@@ -43,7 +43,7 @@ class UserController extends Controller
                     'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
                     "Content-Type" => "application/json",
                 ])
-                ->post('https://sandbox-api.paddle.com/customers', [
+                ->post('https://api.paddle.com/customers', [
                     "name" => $name,
                     "email" => $email
                 ]);
