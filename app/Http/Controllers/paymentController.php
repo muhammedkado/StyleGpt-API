@@ -17,7 +17,7 @@ class paymentController extends Controller
                 'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
                 "Content-Type" => "application/json",
             ])
-            ->get('https://sandbox-api.paddle.com/customers', [
+            ->get('https://api.paddle.com/customers', [
                 'email' => $email
             ]);
         $responseData = $response->json();
@@ -36,7 +36,7 @@ class paymentController extends Controller
                'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
                'Content-Type' => 'application/json',
            ])
-           ->post('https://sandbox-api.paddle.com/transactions', [
+           ->post('https://api.paddle.com/transactions', [
                'items' => [
                    [
                        'quantity' => 1,
@@ -126,7 +126,7 @@ class paymentController extends Controller
             $user->issubscriptions = true;
             foreach ($basicValue as $key => $value) {
                 $key = str_replace(' ', '', $key);
-                if (in_array($key, ['Basic', 'pro', 'pro_blus', 'yearBasic', 'yearPro', 'yearProBluse'])) {
+                if (in_array($key, ['Basic', 'pro', 'pro_plus'])) {
                     $user->credit += intval($value);
                     break; // Assuming only one credit value should be applied
                 }
