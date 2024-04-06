@@ -69,4 +69,5 @@ jobs:
           app-name: 'stylegpt'
           slot-name: 'production'
           publish-profile: ${{ secrets.AzureAppService_PublishProfile }}
+          kudu-url: 'https://stylegpt.azurewebsites.net'
           package: .
