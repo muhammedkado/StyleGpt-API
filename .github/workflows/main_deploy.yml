@@ -20,11 +20,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          
+
       - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+          subscriptionId: 02b826bd-7869-4a79-9356-2f2ea77e8101
+
 
       - name: Check if composer.json exists
         id: check_files
@@ -68,4 +70,4 @@ jobs:
           app-name: 'stylegpt'
           slot-name: 'production'
           package: .
-          publish-profile: ${{ secrets.AzureAppService_PublishProfile_946b5c384903483db76408474049d49f }}
+          publish-profile: '${{ secrets.AzureAppService_PublishProfile_946b5c384903483db76408474049d49f }}'
