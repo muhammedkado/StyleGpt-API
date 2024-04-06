@@ -25,7 +25,6 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          subscriptionId: 02b826bd-7869-4a79-9356-2f2ea77e8101
 
 
       - name: Check if composer.json exists
