@@ -4,67 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6f9e6527b5df3cfb018df64147fbbeb9",
+    "content-hash": "8515ca56b05ce80a4cc5e6bf1cfcae31",
     "packages": [
-        {
-            "name": "benbjurstrom/replicate-php",
-            "version": "v0.3.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/benbjurstrom/replicate-php.git",
-                "reference": "c3a00f79f6aeb2f27e35e9c5322e42eb0bd22730"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/benbjurstrom/replicate-php/zipball/c3a00f79f6aeb2f27e35e9c5322e42eb0bd22730",
-                "reference": "c3a00f79f6aeb2f27e35e9c5322e42eb0bd22730",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1.0",
-                "saloonphp/saloon": "^3.0"
-            },
-            "require-dev": {
-                "laravel/pint": "^1.4",
-                "pestphp/pest": "^2.0.0",
-                "pestphp/pest-plugin-arch": "2.5.0",
-                "phpstan/phpstan": "^1.9.11",
-                "symfony/var-dumper": "^6.2.3"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "BenBjurstrom\\Replicate\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Ben Bjurstrom",
-                    "email": "bbjurstrom@gmail.com"
-                }
-            ],
-            "description": "A PHP client for the Replicate API",
-            "keywords": [
-                "package",
-                "php",
-                "replicate"
-            ],
-            "support": {
-                "issues": "https://github.com/benbjurstrom/replicate-php/issues",
-                "source": "https://github.com/benbjurstrom/replicate-php/tree/v0.3.0"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/benbjurstrom",
-                    "type": "github"
-                }
-            ],
-            "time": "2024-02-15T16:52:25+00:00"
-        },
         {
             "name": "brick/math",
             "version": "0.11.0",

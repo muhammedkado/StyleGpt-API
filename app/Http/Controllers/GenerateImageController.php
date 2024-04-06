@@ -3,20 +3,12 @@
 namespace App\Http\Controllers;
 use App\Models\Image;
 use App\Models\User;
-use GuzzleHttp\Client AS Client;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use BenBjurstrom\Replicate\Replicate;
 use Google\Cloud\Storage\StorageClient;
 use GuzzleHttp\Exception\RequestException;
-use PhpParser\Node\Stmt\TryCatch;
-use Spatie\Async\Pool;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\ClientException;
-use Saloon\Http\Faking\MockResponse;
-use Saloon\Laravel\Saloon;
 use Illuminate\Support\Str;
 
 

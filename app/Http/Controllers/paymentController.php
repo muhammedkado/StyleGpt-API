@@ -15,7 +15,7 @@ class paymentController extends Controller
         $response = Http::withOptions(['verify' => false])
             ->withHeaders([
                 'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
-                "Content-Type" => "application/json",
+                "Content-Type" => "application-json",
             ])
             ->get('https://api.paddle.com/customers', [
                 'email' => $email
@@ -46,7 +46,7 @@ class paymentController extends Controller
                'customer_id' => $customerId,
                'collection_mode' => 'automatic'
            ]);
-       $response->json();
+      return $response->json();
        return response()->json([
            'success' => true,
            'transactionsId' => $response['data']['id'],
