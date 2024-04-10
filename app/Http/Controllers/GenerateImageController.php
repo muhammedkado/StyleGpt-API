@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Image;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +55,7 @@ class GenerateImageController extends Controller
                         "eta" => 0,
                         "image" => $image ?? 'https://replicate.delivery/pbxt/IJZOELWrncBcjdE1s5Ko8ou35ZOxjNxDqMf0BhoRUAtv76u4/room.png',
                         "scale" => 11,
-                        "prompt" => $prompt ?? "a " . $roomTheme .' '. $roomType,
+                        "prompt" => $prompt ?? "a " . $roomTheme . ' ' . $roomType,
                         "a_prompt" => $aPrompt ?? "best quality, extremely detailed, photo from Pinterest, interior, cinematic photo, ultra-detailed, ultra-realistic, award-winning, high-resolution photography interior design, photorealistic, camera shots, dramatic, realistic",
                         "n_prompt" => $nPrompt ?? "poorly drawn hands, missing limb, disfigured, cut off, ugly, grain, low res, deformed, blurry, bad anatomy, disfigured, poorly drawn face, mutation, mutated, floating limbs, disconnected limbs, disgusting, poorly drawn, mutilated, mangled, extra fingers, duplicate artifacts, missing arms, mutated hands, mutilated hands, cloned face, malformed, blurry top wall, blurry walls, extra limbs, weird colors, watermark, blur haze, bad art",
                         "ddim_steps" => $steps ?? 60,
@@ -112,18 +113,26 @@ class GenerateImageController extends Controller
                     } elseif ($responseData['status'] === 'failed') {
                         DB::rollBack();
                         return response()->json([
-                            'status'=>[
+                            'status' => [
                                 'message' => 'Status error: status did not return succeeded',
                                 'error' => true
                             ],
                         ], 400);
                     }
+                } else {
+                    return response()->json([
+                        'status' => [
+                            'message' => $responseData['status'],
+                            'detail' => $responseData['detail'],
+                            'error' => true
+                        ],
+                    ], 400);
                 }
             }
         } else {
             DB::rollBack();
             return response()->json([
-                'status'=>[
+                'status' => [
                     'message' => 'Data is null or URLs.get is not set',
                     'error' => true
                 ],
@@ -161,7 +170,7 @@ class GenerateImageController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'status'=>[
+                'status' => [
                     'message' => $e->getMessage(),
                     'error' => true
                 ],
@@ -189,7 +198,7 @@ class GenerateImageController extends Controller
                             return $this->storeImageFromURL($restoredImage, $uid, $images, $theme, $type, $test);
                         } elseif ($responseData['status'] === 'failed') {
                             return response()->json([
-                                'status'=>[
+                                'status' => [
                                     'error' => true,
                                     'message' => 'Failed to process the request.',
                                     'details' => [
@@ -205,7 +214,7 @@ class GenerateImageController extends Controller
             } else {
                 DB::rollBack();
                 return response()->json([
-                    'status'=>[
+                    'status' => [
                         'message' => 'Data is null or URLs.get is not set',
                         'error' => true
                     ],
@@ -214,7 +223,7 @@ class GenerateImageController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'status'=>[
+                'status' => [
                     'message' => $e->getMessage(),
                     'error' => true
                 ],
@@ -234,7 +243,6 @@ class GenerateImageController extends Controller
             $bucket = $storage->bucket('roomai-af76d.appspot.com');
             // Download image from the provided URL
             if ($test) {
-
                 $imageData = file_get_contents($imageUrl);
             } else {
                 $imageData = file_get_contents($imageUrl[0]);
@@ -242,7 +250,7 @@ class GenerateImageController extends Controller
 
             if ($imageData === false) {
                 return response()->json([
-                    'status'=>[
+                    'status' => [
                         'message' => 'Failed to download image data from URL: ' . $imageUrl,
                         'error' => true
                     ],
