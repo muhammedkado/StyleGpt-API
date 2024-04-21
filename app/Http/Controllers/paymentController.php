@@ -27,7 +27,7 @@ class paymentController extends Controller
     public function createTransaction(request $request)
    {
        $email = $request->request->get('email');
-       $priceId = $request->request->get('priceId');
+       $priceId = 'pri_01htg59arh4c16g42hmw1gvgkj';//$request->request->get('priceId');
 
        $customerId = $this->customerList($email);
 
@@ -46,7 +46,6 @@ class paymentController extends Controller
                'customer_id' => $customerId,
                'collection_mode' => 'automatic'
            ]);
-      return $response->json();
        return response()->json([
            'success' => true,
            'transactionsId' => $response['data']['id'],

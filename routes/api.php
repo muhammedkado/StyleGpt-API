@@ -3,6 +3,7 @@
 use App\Http\Controllers\exploresController;
 use App\Http\Controllers\GenerateImageController;
 use App\Http\Controllers\paymentController;
+use App\Http\Controllers\SearchProductController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -37,3 +38,5 @@ Route::post('/transactions', [paymentController::class, 'createTransaction']);
 Route::post('/checkTransactions', [paymentController::class, 'checkTransaction']);
 
 Route::get('/user/{uid}/images', [UserController::class, 'getImageByUid']);
+
+Route::post('searchProduct', [SearchProductController::class, 'searchProduct']);
