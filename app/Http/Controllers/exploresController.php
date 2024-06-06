@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Image; // Import the Image model
+use App\Models\Image;
 
 class exploresController extends Controller
 {
+    /**
+     * Retrieves 20 random published and explored images for exploration.
+     *
+     * @return \Illuminate\Http\JsonResponse The JSON response containing random image data.
+     */
     public function explore()
     {
-        // Select 20 random images
+        // Select 20 random images that are published and marked for exploration
         $randomImages = Image::where('published', true)->where('explore', true)->inRandomOrder()->limit(20)->get();
 
         // Prepare the response data array
@@ -32,6 +37,12 @@ class exploresController extends Controller
         return response()->json($responseData);
     }
 
+    /**
+     * Changes the publish status of an image.
+     *
+     * @param \Illuminate\Http\Request $request The incoming request containing image ID and publish status.
+     * @return \Illuminate\Http\JsonResponse The JSON response indicating success or failure of the operation.
+     */
     public function publish(Request $request)
     {
         try {
@@ -53,9 +64,14 @@ class exploresController extends Controller
         }
     }
 
+    /**
+     * Retrieves published images ordered by publish timestamp for administrative exploration.
+     *
+     * @return \Illuminate\Http\JsonResponse The JSON response containing image data for administrative exploration.
+     */
     public function adminExplore()
     {
-        // Select 20 random images
+        // Select published images, ordered by publish timestamp descending
         $randomImages = Image::where('published', true)
             ->orderByDesc('publish_at')
             ->get();
@@ -81,6 +97,13 @@ class exploresController extends Controller
         // Return the response as JSON
         return response()->json($responseData);
     }
+
+    /**
+     * Changes the explore status of an image for administrative purposes.
+     *
+     * @param \Illuminate\Http\Request $request The incoming request containing image ID and explore status.
+     * @return \Illuminate\Http\JsonResponse The JSON response indicating success or failure of the operation.
+     */
     public function adminPublish(Request $request)
     {
         try {
@@ -98,6 +121,7 @@ class exploresController extends Controller
             if (!$image) {
                 return response()->json(['error' => true, 'message' => 'Image not found'], 404);
             }
+            // Update the explore status of the image
             $image->explore = $explore;
             $image->save();
             return response()->json(['success' => true, 'message' => 'explore status has been changing successfully'], 200);

@@ -10,8 +10,16 @@ use Laravel\Paddle\Cashier\WebhookController as PaddleWebhookController;
 
 class paymentController extends Controller
 {
+    /**
+     * Retrieves the customer ID associated with the provided email address
+     * from the Paddle API.
+     *
+     * @param string $email The email address of the customer.
+     * @return mixed|null The customer ID if found, otherwise null.
+     */
     private function customerList($email)
     {
+        // Make an API call to Paddle to retrieve customer information
         $response = Http::withOptions(['verify' => false])
             ->withHeaders([
                 'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
@@ -24,6 +32,12 @@ class paymentController extends Controller
         return $responseData['data'][0]['id'];
     }
 
+    /**
+     * Creates a transaction using Paddle API for the specified email address.
+     *
+     * @param \Illuminate\Http\Request $request The incoming request object.
+     * @return \Illuminate\Http\JsonResponse The JSON response indicating the success of the transaction.
+     */
     public function createTransaction(request $request)
    {
        $email = $request->request->get('email');
@@ -53,6 +67,12 @@ class paymentController extends Controller
 
    }
 
+    /**
+     * Checks the validity of a Paddle webhook transaction and processes it.
+     *
+     * @param \Illuminate\Http\Request $request The incoming request object.
+     * @return \Illuminate\Http\JsonResponse The JSON response indicating the success of the transaction processing.
+     */
     public function checkTransaction(Request $request)
     {
         // Verify webhook signature

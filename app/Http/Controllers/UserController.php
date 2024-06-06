@@ -8,8 +8,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
+    /**
+     * Handles the creation of a new user.
+     *
+     * @param \Illuminate\Http\Request $request The incoming request containing user data.
+     * @return \Illuminate\Http\JsonResponse The JSON response indicating success or failure.
+     */
     public function create(Request $request)
     {
+        // Validate the incoming request data
         try {
             $request->validate([
                 'email' => [
@@ -38,6 +45,8 @@ class UserController extends Controller
             $email = $request->input('email');
             $uid = $request->input('uid');
             $image = $request->input('image');
+
+            // Send a POST request to the Paddle API to create a customer
             $response = Http::withOptions(['verify' => false])
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . env('PADDLE_API_KEY'),
@@ -72,6 +81,12 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Fetches a user by their UID.
+     *
+     * @param string $uid The UID of the user to fetch.
+     * @return \Illuminate\Http\JsonResponse The JSON response containing the user data or an error message.
+     */
     public function getUserByUid($uid)
     {
         try {
@@ -91,6 +106,12 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Retrieves images associated with a user by their UID.
+     *
+     * @param string $uid The UID of the user whose images are to be retrieved.
+     * @return \Illuminate\Http\JsonResponse The JSON response containing the user's images or an error message.
+     */
     public function getImageByUid($uid)
     {
         try {
