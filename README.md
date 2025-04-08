@@ -25,7 +25,7 @@ StyleGPT API is a powerful backend service that provides:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/muhammedkado/StyleGpt-API.git
 cd StyleGpt-API
 ```
 
